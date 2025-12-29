@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getDatabase, ref, push, onValue, remove, off } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 // --- CONFIG ---
 const firebaseConfig = {
@@ -16,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 const ADMIN_UID = "cKGUMlXFhPTmwgM6CKbpUxMS0fI3";
 const GEMINI_KEY = "AIzaSyACHJBLDjn72wZDt_Z1LzPGXuAnNG3Fo8U";
@@ -27,24 +28,38 @@ let myChart = null;
 let user = null;
 
 const $ = id => document.getElementById(id);
-const formatMoney = amt => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt).replace('₹', '₹ ');
+const formatMoney = amt => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amt);
 
-// --- AUTH ---
+// --- AUTH LOGIC ---
 onAuthStateChanged(auth, (u) => {
     user = u;
     if (u) {
         $('login-modal').classList.add('hidden');
+        $('user-display').classList.remove('hidden');
+        
+        // Update UI with User Info
+        $('user-avatar').src = u.photoURL || 'https://ui-avatars.com/api/?name=' + u.email;
+        $('user-greet').innerText = `Hello, ${u.displayName ? u.displayName.split(' ')[0] : 'User'}`;
+        
+        // Set Data Path
         currentPath = (u.uid === ADMIN_UID) ? 'transactions' : `users/${u.uid}/transactions`;
         
-        onValue(ref(db, currentPath), snap => {
+        // Sync Database
+        const dataRef = ref(db, currentPath);
+        onValue(dataRef, snap => {
             const data = snap.val();
             transactions = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
             renderUI();
         });
     } else {
         $('login-modal').classList.remove('hidden');
+        $('user-display').classList.add('hidden');
+        if(currentPath) off(ref(db, currentPath)); // Unsubscribe when logged out
     }
 });
+
+// Auth Button Listeners
+$('google-login-btn').onclick = () => signInWithPopup(auth, googleProvider).catch(e => $('auth-error').innerText = e.message);
 
 $('auth-login-btn').onclick = async () => {
     try {
@@ -55,11 +70,10 @@ $('auth-login-btn').onclick = async () => {
 $('auth-up-btn').onclick = async () => {
     try {
         await createUserWithEmailAndPassword(auth, $('login-email').value, $('login-pass').value);
-        alert("Account Created!");
     } catch (e) { $('auth-error').innerText = "❌ " + e.message; }
 };
 
-// --- CORE LOGIC ---
+// --- CORE RENDERING ---
 const renderUI = () => {
     const sorted = [...transactions].sort((a,b) => b.date - a.date);
     const stats = getStats();
@@ -82,7 +96,6 @@ const renderUI = () => {
         </div>
     `).join('') || '<div style="text-align:center; padding:50px; opacity:0.3;">READY FOR LOGS...</div>';
 
-    // Add event listeners to delete buttons
     document.querySelectorAll('.del-btn').forEach(btn => {
         btn.onclick = () => deleteEntry(btn.getAttribute('data-id'));
     });
@@ -133,8 +146,10 @@ const updateVisuals = (stats) => {
 
     const percent = Math.min(100, Math.floor((stats.monthlySpend / BUDGET_LIMIT) * 100));
     const bar = $('budget-bar');
-    bar.style.width = percent + '%';
-    bar.className = (percent > 85) ? 'danger' : (percent > 60) ? 'warning' : 'safe';
+    if (bar) {
+        bar.style.width = percent + '%';
+        bar.className = (percent > 85) ? 'danger' : (percent > 60) ? 'warning' : 'safe';
+    }
     $('budget-percent').innerText = percent + '%';
     $('budget-status').innerText = `${formatMoney(stats.monthlySpend)} spent of ${formatMoney(BUDGET_LIMIT)} limit`;
 };
@@ -156,21 +171,22 @@ $('submit-btn').onclick = async () => {
 
 const deleteEntry = id => confirm('Delete record?') && remove(ref(db, `${currentPath}/${id}`));
 
-// --- AI ASSISTANT ---
+// --- AI ASSISTANT (Personalized) ---
 async function callAI(query) {
     const stats = getStats();
+    const userName = user?.displayName || "User";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
     
     const payload = {
-        contents: [{ parts: [{ text: `User Balance: ${stats.total}. Recent Logs: ${JSON.stringify(transactions.slice(0,5))}. User Query: ${query}` }] }],
-        systemInstruction: { parts: [{ text: "You are XpenseWise Strategic AI. Be professional, very concise (max 2 sentences). Always use ₹ currency format." }] }
+        contents: [{ parts: [{ text: `User Name: ${userName}. User Balance: ${stats.total}. Recent Logs: ${JSON.stringify(transactions.slice(0,5))}. User Query: ${query}` }] }],
+        systemInstruction: { parts: [{ text: `You are XpenseWise Strategic AI. Address the user by their name (${userName}). Be professional and extremely concise. Offer wealth-building advice based on their data. Use ₹ currency format.` }] }
     };
 
     try {
         const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
         const json = await res.json();
-        return json.candidates?.[0]?.content?.parts?.[0]?.text || "Strategic engine is recharging. Try again later.";
-    } catch (e) { return "Connection timeout."; }
+        return json.candidates?.[0]?.content?.parts?.[0]?.text || "Strategy engine offline.";
+    } catch (e) { return "Connection error."; }
 }
 
 const assistant = {
@@ -198,9 +214,9 @@ const assistant = {
 $('chat-toggle').onclick = assistant.toggle;
 $('chat-close').onclick = assistant.toggle;
 $('chat-send').onclick = () => assistant.send();
-$('ai-analyze-btn').onclick = () => { if (!$('chat-window').classList.contains('open')) assistant.toggle(); assistant.send("Strategic analysis please."); };
+$('ai-analyze-btn').onclick = () => { if (!$('chat-window').classList.contains('open')) assistant.toggle(); assistant.send("Please provide a strategic analysis for me."); };
 
-// --- UTILS ---
+// --- THEME & EXIT ---
 $('theme-toggle').onclick = () => {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -226,5 +242,5 @@ $('trans-type').onchange = () => {
 
 window.onload = () => {
     $('trans-type').onchange();
-    setTimeout(() => $('welcome-overlay').classList.add('hidden'), 1500);
+    setTimeout(() => $('welcome-overlay').classList.add('hidden'), 1000);
 };

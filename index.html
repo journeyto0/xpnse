@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <link rel="stylesheet" href="style.css">
 
     <script>
@@ -22,11 +21,12 @@
 
     <div id="login-modal" class="overlay">
         <div class="card auth-card">
-            <div class="logo-text">XPENSEWISE<span> LOGIN</span></div>
+            <div class="logo-text" style="text-align: center; margin-bottom: 20px;">XPENSEWISE<span> PRO</span></div>
+            
             <div class="auth-form">
                 <div class="input-box">
                     <label>Email Address</label>
-                    <input type="email" id="login-email" placeholder="admin@xpense.wise">
+                    <input type="email" id="login-email" placeholder="name@company.com">
                 </div>
                 <div class="input-box">
                     <label>Password</label>
@@ -34,10 +34,18 @@
                 </div>
                 <div class="auth-btns">
                     <button id="auth-login-btn" class="btn-prime">SIGN IN</button>
-                    <button id="auth-up-btn" class="btn-prime">SIGN UP</button>
+                    <button id="auth-up-btn" class="btn-prime" style="background: var(--input-bg); color: var(--text);">SIGN UP</button>
                 </div>
             </div>
-            <p id="auth-error"></p>
+
+            <div style="text-align: center; margin: 20px 0; color: var(--text-dim); font-size: 0.8rem;">OR</div>
+
+            <button id="google-login-btn" class="btn-prime" style="width: 100%; background: #ffffff; color: #000; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="18">
+                CONTINUE WITH GOOGLE
+            </button>
+            
+            <p id="auth-error" style="color: var(--expense-color); font-size: 0.8rem; margin-top: 15px; text-align: center;"></p>
         </div>
     </div>
 
@@ -61,7 +69,13 @@
                 </div>
                 <div class="logo-text">XPENSE<span>WISE</span></div>
             </a>
+            
             <div class="actions flex-between">
+                <div id="user-display" class="hidden" style="display: flex; align-items: center; gap: 12px; margin-right: 20px;">
+                    <img id="user-avatar" src="" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--accent);">
+                    <span id="user-greet" style="font-size: 0.85rem; font-weight: 700;"></span>
+                </div>
+                
                 <div id="theme-toggle" class="magic-btn"><i class="fas fa-magic"></i></div>
                 <button id="exit-btn" class="btn-prime btn-small">SECURE LOGOUT</button>
             </div>
