@@ -17,7 +17,7 @@ Track spending fast, see updates instantly across devices, and get short strateg
 
 ## Clone & Run
 ```bash
-git clone <YOUR_REPO_URL>
+git clone <https://github.com/journeyto0/xpnse.git>
 cd xpnse
 ```
 
