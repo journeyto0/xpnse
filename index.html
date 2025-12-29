@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XpenseWise | Strategic Asset Intelligence</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</head>
+<body>
+
+    <div id="login-modal" class="overlay">
+        <div class="card auth-card">
+            <div class="logo-text">XPENSEWISE<span> LOGIN</span></div>
+            <div class="auth-form">
+                <div class="input-box">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" placeholder="admin@xpense.wise">
+                </div>
+                <div class="input-box">
+                    <label>Password</label>
+                    <input type="password" id="login-pass" placeholder="••••••••">
+                </div>
+                <div class="auth-btns">
+                    <button id="auth-login-btn" class="btn-prime">SIGN IN</button>
+                    <button id="auth-up-btn" class="btn-prime">SIGN UP</button>
+                </div>
+            </div>
+            <p id="auth-error"></p>
+        </div>
+    </div>
+
+    <div id="welcome-overlay" class="overlay hidden">
+        <div class="overlay-msg">WELCOME BACK 👋<br>INITIALIZING ASSETS...</div>
+    </div>
+    <div id="exit-overlay" class="overlay hidden">
+        <div class="overlay-msg">DATA ENCRYPTED ✨<br>SESSION SECURED.</div>
+    </div>
+
+    <header class="header">
+        <div class="container flex-between">
+            <a href="#" class="brand">
+                <div class="logo-box">
+                    <svg viewBox="0 0 100 100">
+                        <rect x="25" y="25" width="50" height="50" rx="8" fill="none" stroke="white" stroke-width="6"/>
+                        <path d="M50 15 L85 50 L50 85 L15 50 Z" fill="none" stroke="white" stroke-width="4" stroke-dasharray="4 2"/>
+                        <circle cx="50" cy="50" r="10" fill="white"/>
+                        <path d="M50 35 L50 65 M35 50 L65 50" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="logo-text">XPENSE<span>WISE</span></div>
+            </a>
+            <div class="actions flex-between">
+                <div id="theme-toggle" class="magic-btn"><i class="fas fa-magic"></i></div>
+                <button id="exit-btn" class="btn-prime btn-small">SECURE LOGOUT</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="main-grid">
+            <div class="dashboard-main">
+                <section class="card">
+                    <div class="title-row"><i class="fas fa-plus-circle"></i> NEW LOG ENTRY</div>
+                    <div class="form-grid">
+                        <div class="input-box">
+                            <label>Type</label>
+                            <select id="trans-type">
+                                <option value="expense">📉 Expenditure</option>
+                                <option value="income">📈 Income</option>
+                            </select>
+                        </div>
+                        <div class="input-box">
+                            <label>Category</label>
+                            <input type="text" id="sub-category" placeholder="e.g. Rent, Salary..." list="cat-list">
+                            <datalist id="cat-list"></datalist>
+                        </div>
+                        <div class="input-box">
+                            <label>Amount (₹)</label>
+                            <input type="number" id="amount" placeholder="0.00">
+                        </div>
+                        <button id="submit-btn" class="btn-prime">ADD TO LEDGER</button>
+                    </div>
+                </section>
+
+                <section class="card margin-top-40">
+                    <div class="title-row"><i class="fas fa-receipt"></i> TRANSACTION HISTORY</div>
+                    <div id="ledger-list"></div>
+                </section>
+            </div>
+
+            <aside class="dashboard-sidebar">
+                <section class="card">
+                    <div class="title-row"><i class="fas fa-chart-pie"></i> ASSET ALLOCATION</div>
+                    <div class="chart-container">
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="card margin-top-20">
+                    <div class="flex-between">
+                        <label class="label-caps">MONTHLY BUDGET</label>
+                        <span id="budget-percent">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="budget-bar"></div>
+                    </div>
+                    <small id="budget-status"></small>
+                </section>
+
+                <section class="card margin-top-20 balance-card">
+                    <label class="label-caps spaced">Total Balance</label>
+                    <h2 id="total-balance">₹ 0</h2>
+                    <button id="ai-analyze-btn" class="btn-prime ai-btn">✨ GENERATE STRATEGIC ANALYSIS</button>
+                </section>
+
+                <section class="card margin-top-20">
+                    <div class="title-row"><i class="fas fa-bolt"></i> RECENT LOGS</div>
+                    <div id="sidebar-list"></div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <div class="chat-widget">
+        <button id="chat-toggle" class="chat-btn"><i class="fas fa-comment-dots"></i></button>
+        <div id="chat-window" class="chat-window">
+            <div class="chat-header">
+                <span>✨ STRATEGIC ASSISTANT</span>
+                <i class="fas fa-times" id="chat-close"></i>
+            </div>
+            <div id="chat-body" class="chat-body"></div>
+            <div class="chat-footer">
+                <input type="text" id="chat-input" placeholder="Query your data...">
+                <button id="chat-send" class="btn-prime"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
