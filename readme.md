@@ -1,6 +1,6 @@
 # XpenseWise Pro 🚀
 **Live Site:** [https://xpensewise-dfc68.web.app](https://xpensewise-dfc68.web.app) 
-For Testing Sign Up through any tempmail.
+- (For Testing Sign Up through any tempmail.)
 
 # XpenseWise | Strategic Asset Intelligence
 A minimal, glassy expense tracker that syncs **in real time**, supports **login**, and can generate **Gemini-based spending insights**.
